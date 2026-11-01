@@ -13,10 +13,11 @@ function signToken(admin) {
 }
 
 function setTokenCookie(res, token) {
+  const isProd = process.env.NODE_ENV === "production";
   res.cookie("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
     maxAge: TOKEN_MAX_AGE * 1000,
     path: "/",
   });

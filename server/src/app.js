@@ -10,11 +10,26 @@ import errorHandler from "./middleware/errorHandler.js";
 
 const app = express();
 
+// ── Allowed CORS Origins ────────────────────────────────────
+const clientOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((o) => o.trim().replace(/\/$/, ""));
+
 // ── Middleware ──────────────────────────────────────────────
-app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const isAllowed =
+        clientOrigins.includes(origin) ||
+        clientOrigins.includes("*") ||
+        process.env.NODE_ENV !== "production";
+      if (isAllowed) return callback(null, true);
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 
