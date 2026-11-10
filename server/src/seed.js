@@ -7,7 +7,12 @@
  * Requires MONGODB_URI in .env (or uses default localhost).
  */
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 import mongoose from "mongoose";
 import Opportunity from "./models/Opportunity.js";

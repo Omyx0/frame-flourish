@@ -127,14 +127,27 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   .bg-card { backdrop-filter: blur(16px) saturate(150%); }
-  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
   :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+}
+
+/* Continuous corners (Apple style squircles for Chromium) */
+.frame, .rounded-lg, .rounded-md, .rounded-sm, button, [class*="rounded-"] {
+  corner-shape: squircle;
 }
 
 /* Neo-brutal frame: used selectively */
 @utility frame {
   border: 2px solid var(--frame);
   box-shadow: var(--shadow-hard);
+  corner-shape: squircle;
 }
 @utility frame-lift {
   transition: transform 180ms var(--ease-out-soft), box-shadow 180ms var(--ease-out-soft);
@@ -158,6 +171,23 @@
 @utility no-scrollbar {
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
+}
+
+/* Hit-slop utility: guarantees minimum 44x44px tap target size */
+@utility hit-slop {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 44px;
+    min-height: 44px;
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
+  }
 }
 
 @keyframes swing {
@@ -187,6 +217,21 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   .reveal { opacity: 1; transform: none; }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Chrome View Transitions (under 300ms) */
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 250ms;
+  animation-timing-function: var(--ease-out-soft);
 }
 
 /* ---------- Mobile app feel ---------- */

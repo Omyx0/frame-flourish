@@ -55,8 +55,48 @@ export const DOMAINS = [
 export const TYPES: EmploymentType[] = ["Internship", "Full-time", "Part-time", "Contract"];
 export const MODES: WorkMode[] = ["On-site", "Remote", "Hybrid"];
 
+// ── Stale-While-Revalidate (SWR) Cache ───────────────────────
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+const swrMemoryCache = new Map<string, CacheEntry<any>>();
+
+function getCacheKey(endpoint: string, params?: any): string {
+  return `${endpoint}:${JSON.stringify(params || {})}`;
+}
+
+export function clearOpportunityCache() {
+  swrMemoryCache.clear();
+}
+
 export const opportunityService = {
-  async list(params?: OpportunityQueryParams): Promise<PaginatedOpportunities> {
+  /**
+   * Fetches opportunities with Stale-While-Revalidate semantics.
+   * If cached data exists, it immediately invokes onData(cached, true).
+   * It then revalidates in the background and invokes onData(fresh, false).
+   */
+  async list(
+    params?: OpportunityQueryParams,
+    options?: { onRevalidate?: (fresh: PaginatedOpportunities) => void }
+  ): Promise<PaginatedOpportunities> {
+    const key = getCacheKey("/opportunities", params);
+    const cached = swrMemoryCache.get(key);
+
+    // Return stale cache immediately if present
+    if (cached) {
+      // Trigger background revalidation
+      this._revalidateList(params, key, options?.onRevalidate);
+      return cached.data;
+    }
+
+    // Otherwise perform standard network request
+    const fresh = await this._fetchList(params);
+    swrMemoryCache.set(key, { data: fresh, timestamp: Date.now() });
+    return fresh;
+  },
+
+  async _fetchList(params?: OpportunityQueryParams): Promise<PaginatedOpportunities> {
     const res = await apiClient.get<any, { success: boolean; data: Opportunity[]; pagination: any }>("/opportunities", {
       params,
     });
@@ -66,24 +106,62 @@ export const opportunityService = {
     };
   },
 
+  async _revalidateList(
+    params?: OpportunityQueryParams,
+    key?: string,
+    onRevalidate?: (fresh: PaginatedOpportunities) => void
+  ) {
+    try {
+      const fresh = await this._fetchList(params);
+      if (key) swrMemoryCache.set(key, { data: fresh, timestamp: Date.now() });
+      if (onRevalidate) onRevalidate(fresh);
+    } catch {
+      // Background revalidation silently preserves cached stale data on network failure
+    }
+  },
+
   async getById(id: string): Promise<Opportunity> {
+    const key = `opp:${id}`;
+    const cached = swrMemoryCache.get(key);
+    if (cached) {
+      // Trigger background revalidate
+      apiClient.get<any, { success: boolean; data: Opportunity }>(`/opportunities/${id}`)
+        .then((res) => swrMemoryCache.set(key, { data: res.data, timestamp: Date.now() }))
+        .catch(() => {});
+      return cached.data;
+    }
     const res = await apiClient.get<any, { success: boolean; data: Opportunity }>(`/opportunities/${id}`);
+    swrMemoryCache.set(key, { data: res.data, timestamp: Date.now() });
     return res.data;
   },
 
   async create(data: Partial<Opportunity>): Promise<Opportunity> {
+    clearOpportunityCache();
     const res = await apiClient.post<any, { success: boolean; data: Opportunity }>("/opportunities", data);
     return res.data;
   },
 
   async update(id: string, data: Partial<Opportunity>): Promise<Opportunity> {
+    clearOpportunityCache();
     const res = await apiClient.patch<any, { success: boolean; data: Opportunity }>(`/opportunities/${id}`, data);
     return res.data;
   },
 
   async delete(id: string): Promise<void> {
+    clearOpportunityCache();
     await apiClient.delete(`/opportunities/${id}`);
   },
 };
+
+// Auto-revalidate on window focus & network online
+if (typeof window !== "undefined") {
+  window.addEventListener("focus", () => {
+    // Revalidation fires seamlessly for active pages
+    window.dispatchEvent(new CustomEvent("fs-revalidate"));
+  });
+  window.addEventListener("online", () => {
+    window.dispatchEvent(new CustomEvent("fs-revalidate"));
+  });
+}
 
 export default opportunityService;

@@ -2,13 +2,38 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>firstshift · Internships & early-career jobs</title>
     <meta name="description" content="Find internships and graduate jobs across engineering, data, design, marketing and finance." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#BA181B" />
+
+    <!-- Chrome Speculation Rules for safe moderate prerendering / prefetching -->
+    <script type="speculationrules">
+      {
+        "prerender": [
+          {
+            "source": "list",
+            "urls": ["/opportunities", "/domains", "/saved"],
+            "eagerness": "moderate"
+          }
+        ],
+        "prefetch": [
+          {
+            "where": {
+              "and": [
+                { "href_matches": "/*" },
+                { "not": { "href_matches": "/admin*" } },
+                { "not": { "href_matches": "/api/*" } }
+              ]
+            },
+            "eagerness": "moderate"
+          }
+        ]
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

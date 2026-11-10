@@ -5,12 +5,14 @@ import hero from "@/assets/hero.jpg";
 import { Reveal, btn } from "@/components/brand";
 import { SearchBar } from "@/components/filters";
 import { FeaturedCard, OpportunityRow, RecentCard, getOppId } from "@/components/opportunity-card";
+import { FeaturedCardSkeleton, useDelayedLoading } from "@/components/common/Skeleton";
 import { opportunityService, DOMAINS, type Opportunity } from "@/services/opportunityService";
 
 export function HomePage() {
   const [q, setQ] = useState("");
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = useDelayedLoading(loading, 300);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -97,13 +99,20 @@ export function HomePage() {
 
           {/* Framed preview collage */}
           <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-            <div className="relative ml-auto w-[78%] overflow-hidden rounded-lg border-2 border-frame shadow-hard-lg">
+            <div className="relative ml-auto w-[78%] overflow-hidden rounded-lg border-2 border-frame shadow-hard-lg bg-burgundy/20">
+              {/* Blur placeholder while hero loads */}
+              <div
+                className="absolute inset-0 bg-[#A4161A]/30 backdrop-blur-md transition-opacity duration-500 pointer-events-none"
+                aria-hidden="true"
+              />
               <img
                 src={hero}
                 alt="Graduate walking through an office on her first day"
                 width={896}
                 height={1152}
-                className="aspect-[4/5] w-full object-cover"
+                loading="eager"
+                decoding="async"
+                className="aspect-[4/5] w-full object-cover relative z-10 transition-opacity duration-300"
               />
             </div>
             {/* swinging tag */}
@@ -141,12 +150,14 @@ export function HomePage() {
           </Link>
         </div>
 
-        {loading ? (
+        {loading && showSkeleton ? (
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-64 animate-pulse rounded-lg border-2 border-border bg-card/60 p-5 frame" />
+              <FeaturedCardSkeleton key={i} />
             ))}
           </div>
+        ) : loading ? (
+          <div className="min-h-[250px]" aria-busy="true" />
         ) : opportunities.length === 0 ? (
           <div className="mt-10 rounded-lg border-2 border-dashed border-input p-12 text-center text-muted-foreground">
             No opportunities found yet. If you are an admin, sign in to add listings.

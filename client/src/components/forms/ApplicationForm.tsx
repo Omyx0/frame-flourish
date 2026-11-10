@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +23,12 @@ interface FormState {
 
 export function ApplicationForm({ opportunityId, opportunityTitle, onSuccess }: ApplicationFormProps) {
   const navigate = useNavigate();
+  // Stripe-style Idempotency Key: stable UUID across retries of this submission
+  const idempotencyKeyRef = useRef<string>(
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `idemp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  );
   const [f, setF] = useState<FormState>({
     fullName: "",
     email: "",
@@ -75,14 +81,17 @@ export function ApplicationForm({ opportunityId, opportunityTitle, onSuccess }: 
     setServerErr(null);
 
     try {
-      await applicationService.submit({
-        opportunityId,
-        fullName: f.fullName.trim(),
-        email: f.email.trim(),
-        phone: f.phone.trim(),
-        resumeUrl: f.resumeUrl.trim(),
-        coverLetter: f.coverLetter.trim() || undefined,
-      });
+      await applicationService.submit(
+        {
+          opportunityId,
+          fullName: f.fullName.trim(),
+          email: f.email.trim(),
+          phone: f.phone.trim(),
+          resumeUrl: f.resumeUrl.trim(),
+          coverLetter: f.coverLetter.trim() || undefined,
+        },
+        idempotencyKeyRef.current
+      );
 
       setStatus("done");
       toast.success("Application submitted successfully!");

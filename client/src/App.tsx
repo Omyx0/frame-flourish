@@ -3,6 +3,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { SavedProvider } from "@/context/SavedContext";
 import { SiteHeader, SiteFooter, DesktopPreviewToggle } from "@/components/brand";
 import { MobileTabBar, PageTransition } from "@/components/mobile";
+import { CommandMenu } from "@/components/common/CommandMenu";
 import { Toaster } from "@/components/ui/sonner";
 import AppRoutes from "@/routes/AppRoutes";
 
@@ -24,6 +25,7 @@ function AppContent() {
       {!isAdmin && <SiteFooter />}
       <MobileTabBar />
       <DesktopPreviewToggle />
+      <CommandMenu />
       <Toaster position="bottom-right" richColors />
     </div>
   );

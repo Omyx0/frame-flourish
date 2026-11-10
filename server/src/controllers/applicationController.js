@@ -2,12 +2,23 @@ import Application from "../models/Application.js";
 import Opportunity from "../models/Opportunity.js";
 import { success, paginated, fail, serverError } from "../utils/apiResponse.js";
 
+// In-memory idempotency store to prevent duplicate submissions on retry (TTL: 24h)
+const idempotencyStore = new Map();
+
 /**
  * POST /api/applications
- * Submit an application (public, with validation).
+ * Submit an application (public, with validation and Idempotency-Key support).
  */
 export async function submitApplication(req, res) {
   try {
+    const idempotencyKey = req.headers["idempotency-key"];
+    if (idempotencyKey) {
+      const cached = idempotencyStore.get(idempotencyKey);
+      if (cached && Date.now() < cached.expiresAt) {
+        return success(res, cached.data, 201);
+      }
+    }
+
     const { opportunityId, fullName, email, phone, resumeUrl, coverLetter } = req.body;
 
     // Verify the opportunity exists
@@ -33,6 +44,13 @@ export async function submitApplication(req, res) {
       resumeUrl: resumeUrl || undefined,
       coverLetter: coverLetter || undefined,
     });
+
+    if (idempotencyKey) {
+      idempotencyStore.set(idempotencyKey, {
+        data: application,
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      });
+    }
 
     return success(res, application, 201);
   } catch (error) {

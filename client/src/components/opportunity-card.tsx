@@ -16,7 +16,7 @@ export function Deadline({ deadline }: { deadline?: string | undefined }) {
   const d = daysLeft(deadline);
   if (d === null) return <span className="text-muted-foreground">Rolling</span>;
   if (d < 0) return <span className="text-muted-foreground">Closed</span>;
-  return <span className={cn(d <= 14 && "font-semibold text-primary")}>{d}d left</span>;
+  return <span className={cn("tabular-nums", d <= 14 && "font-semibold text-primary")}>{d}d left</span>;
 }
 
 export function Tag({ children, strong, className }: { children: React.ReactNode; strong?: boolean; className?: string }) {
@@ -55,7 +55,7 @@ export function FeaturedCard({ o }: { o: Opportunity }) {
       </div>
       <div className="mt-auto flex items-end justify-between gap-2 pt-3 text-xs sm:pt-6 sm:text-sm">
         <div className="min-w-0">
-          <p className="truncate font-semibold">{o.pay ?? "Unpaid / not listed"}</p>
+          <p className="truncate font-semibold tabular-nums">{o.pay ?? "Unpaid / not listed"}</p>
           <p className="mt-0.5 flex items-center gap-1 truncate text-muted-foreground">
             <MapPin className="size-3 shrink-0 sm:size-3.5" /> {o.location} · {o.workMode}
           </p>
@@ -95,7 +95,7 @@ export function OpportunityRow({ o }: { o: Opportunity }) {
         <p className="text-muted-foreground">{o.workMode}</p>
       </div>
       <div className="hidden text-sm lg:block">
-        <p className="font-semibold">{o.pay ?? "Not listed"}</p>
+        <p className="font-semibold tabular-nums">{o.pay ?? "Not listed"}</p>
         <p className="text-muted-foreground">{o.type}</p>
       </div>
       <div className="hidden w-20 text-right text-sm lg:block">
@@ -143,7 +143,7 @@ export function RecentCard({ o, index }: { o: Opportunity; index: number }) {
     >
       <div className="flex items-start justify-between">
         <span className="rounded-sm bg-primary px-1.5 py-px font-display text-[9px] font-bold uppercase tracking-widest text-primary-foreground">New</span>
-        <span className="font-display text-xl font-extrabold leading-none opacity-15 sm:text-2xl">{String(index + 1).padStart(2, "0")}</span>
+        <span className="font-display text-xl font-extrabold leading-none opacity-15 sm:text-2xl tabular-nums">{String(index + 1).padStart(2, "0")}</span>
       </div>
       <h3 className="mt-1.5 line-clamp-2 text-[13px] font-bold leading-snug">{o.title}</h3>
       <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{company}</p>

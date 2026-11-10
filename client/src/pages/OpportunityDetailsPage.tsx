@@ -12,6 +12,7 @@ import {
 import { Logo, SavedButton, btn } from "@/components/brand";
 import { Deadline, Tag, getOppId, getCompanyName } from "@/components/opportunity-card";
 import { ApplicationForm } from "@/components/forms/ApplicationForm";
+import { OpportunityDetailsSkeleton, useDelayedLoading } from "@/components/common/Skeleton";
 import { opportunityService, type Opportunity } from "@/services/opportunityService";
 import { fmtDate, cn } from "@/utils/utils";
 
@@ -56,6 +57,7 @@ export function OpportunityDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = useDelayedLoading(loading, 300);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,6 +78,9 @@ export function OpportunityDetailsPage() {
   }, [id]);
 
   if (loading) {
+    if (showSkeleton) {
+      return <OpportunityDetailsSkeleton />;
+    }
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="size-8 animate-spin text-primary" />
@@ -205,7 +210,7 @@ export function OpportunityDetailsPage() {
 
       {/* Mobile Sticky Apply Bar */}
       {!closed && (
-        <div className="glass fixed inset-x-0 bottom-16 z-30 flex items-center justify-between border-t border-border p-3 lg:hidden">
+        <div className="glass fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 flex items-center justify-between border-t border-border p-3 lg:hidden">
           <div>
             <p className="text-xs text-muted-foreground">Quick apply</p>
             <p className="font-semibold">{opportunity.pay || opportunity.type}</p>

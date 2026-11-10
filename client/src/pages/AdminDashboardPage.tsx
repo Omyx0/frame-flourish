@@ -1,19 +1,9 @@
-import { useEffect, useState } from "react";
-import { Pencil, Plus, Trash2, Loader2 } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Pencil, Plus, Trash2, Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Logo, Spinner, btn } from "@/components/brand";
 import { Deadline, Tag, getOppId, getCompanyName } from "@/components/opportunity-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { OpportunityForm } from "@/components/forms/OpportunityForm";
 import { opportunityService, type Opportunity } from "@/services/opportunityService";
 import { applicationService, type Application } from "@/services/applicationService";
@@ -38,8 +28,9 @@ export function AdminDashboardPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<Opportunity> | null>(null);
-  const [delTarget, setDelTarget] = useState<Opportunity | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  
+  // Pending deletions map: id -> { opportunity: Opportunity, index: number, timer: NodeJS.Timeout }
+  const pendingDeletionsRef = useRef<Map<string, { opp: Opportunity; index: number; timer: NodeJS.Timeout }>>(new Map());
 
   const loadData = async () => {
     try {
@@ -58,22 +49,67 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     loadData();
+    return () => {
+      // Flush any pending deletions on unmount
+      pendingDeletionsRef.current.forEach(({ opp, timer }) => {
+        clearTimeout(timer);
+        const id = getOppId(opp);
+        if (id) opportunityService.delete(id).catch(console.error);
+      });
+    };
   }, []);
 
-  const handleDelete = async () => {
-    if (!delTarget) return;
-    const id = getOppId(delTarget);
-    setDeleting(true);
-    try {
-      await opportunityService.delete(id);
-      toast.success("Opportunity deleted");
-      setDelTarget(null);
-      await loadData();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete opportunity");
-    } finally {
-      setDeleting(false);
-    }
+  const triggerDeleteWithUndo = (opp: Opportunity) => {
+    const id = getOppId(opp);
+    if (!id) return;
+
+    // Record original index for clean restoration
+    const originalIndex = opportunities.findIndex((o) => getOppId(o) === id);
+
+    // 1. Optimistic instant removal from UI
+    setOpportunities((prev) => prev.filter((o) => getOppId(o) !== id));
+
+    // 2. Schedule actual delete after 7 seconds
+    const timer = setTimeout(async () => {
+      try {
+        await opportunityService.delete(id);
+        pendingDeletionsRef.current.delete(id);
+      } catch (err: any) {
+        // Restore if backend delete fails
+        setOpportunities((prev) => {
+          const next = [...prev];
+          next.splice(originalIndex, 0, opp);
+          return next;
+        });
+        toast.error(`Failed to delete "${opp.title}". Restored.`);
+        pendingDeletionsRef.current.delete(id);
+      }
+    }, 7000);
+
+    pendingDeletionsRef.current.set(id, { opp, index: originalIndex, timer });
+
+    // 3. Show Gmail-style Undo toast with role="status"
+    toast(`"${opp.title}" removed`, {
+      duration: 7000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          const entry = pendingDeletionsRef.current.get(id);
+          if (entry) {
+            clearTimeout(entry.timer);
+            pendingDeletionsRef.current.delete(id);
+            setOpportunities((prev) => {
+              const next = [...prev];
+              next.splice(entry.index, 0, entry.opp);
+              return next;
+            });
+            toast.success(`Restored "${opp.title}"`, { duration: 3000 });
+          }
+        },
+      },
+      // role="status" ensures screen readers announce the reversible action
+      description: "You have 7 seconds to undo this action.",
+    });
   };
 
   const getAppCount = (oppId: string) => {
@@ -151,9 +187,9 @@ export function AdminDashboardPage() {
                             <Pencil className="size-4" />
                           </button>
                           <button
-                            onClick={() => setDelTarget(o)}
+                            onClick={() => triggerDeleteWithUndo(o)}
                             className={cn(btn("ghost", "sm"), "text-destructive cursor-pointer")}
-                            aria-label={`Delete ${o.title}`}
+                            aria-label={`Delete ${o.title} (reversible)`}
                           >
                             <Trash2 className="size-4" />
                           </button>
@@ -193,7 +229,7 @@ export function AdminDashboardPage() {
                       <Pencil className="size-4" /> Edit
                     </button>
                     <button
-                      onClick={() => setDelTarget(o)}
+                      onClick={() => triggerDeleteWithUndo(o)}
                       className={cn(btn("outline", "sm"), "text-destructive cursor-pointer")}
                     >
                       <Trash2 className="size-4" /> Delete
@@ -225,28 +261,6 @@ export function AdminDashboardPage() {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Delete confirmation alert */}
-      <AlertDialog open={!!delTarget} onOpenChange={(v) => !v && setDelTarget(null)}>
-        <AlertDialogContent className="border-2 border-frame shadow-hard-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete &quot;{delTarget?.title}&quot;?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently removes the listing from the database. Existing candidate applications will remain safely preserved in the database.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-burgundy"
-              onClick={handleDelete}
-            >
-              {deleting ? <Spinner /> : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

@@ -35,8 +35,14 @@ export interface PaginatedApplications {
 }
 
 export const applicationService = {
-  async submit(data: ApplicationSubmission): Promise<Application> {
-    const res = await apiClient.post<any, { success: boolean; data: Application }>("/applications", data);
+  async submit(data: ApplicationSubmission, idempotencyKey?: string): Promise<Application> {
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers["Idempotency-Key"] = idempotencyKey;
+    }
+    const res = await apiClient.post<any, { success: boolean; data: Application }>("/applications", data, {
+      headers,
+    });
     return res.data;
   },
 

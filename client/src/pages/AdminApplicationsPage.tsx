@@ -42,15 +42,29 @@ export function AdminApplicationsPage() {
     loadData();
   }, []);
 
-  const handleStatusChange = async (appId: string, status: ApplicationStatus) => {
+  const handleStatusChange = async (appId: string, nextStatus: ApplicationStatus) => {
+    // Find previous status for rollback
+    const prevApp = applications.find((a) => (a._id || a.id) === appId);
+    const prevStatus = prevApp?.status;
+    if (prevStatus === nextStatus) return;
+
+    // 1. Optimistic update: instantly update UI
+    setApplications((prev) =>
+      prev.map((a) => ((a._id || a.id) === appId ? { ...a, status: nextStatus } : a))
+    );
+
     try {
-      await applicationService.updateStatus(appId, status);
-      setApplications((prev) =>
-        prev.map((a) => ((a._id || a.id) === appId ? { ...a, status } : a))
-      );
-      toast.success(`Status updated to ${status}`);
+      // 2. Perform backend mutation
+      await applicationService.updateStatus(appId, nextStatus);
+      toast.success(`Status updated to ${nextStatus}`);
     } catch (err: any) {
-      toast.error(err.message || "Failed to update status");
+      // 3. Roll back immediately if server request fails
+      if (prevStatus) {
+        setApplications((prev) =>
+          prev.map((a) => ((a._id || a.id) === appId ? { ...a, status: prevStatus } : a))
+        );
+      }
+      toast.error(err.message || "Failed to update status. Reverting change.");
     }
   };
 

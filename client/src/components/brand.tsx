@@ -1,9 +1,10 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Bookmark, Menu, Moon, Sun, X, Monitor } from "lucide-react";
+import { Bookmark, Menu, Moon, Sun, X, Monitor, Search } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/utils/utils";
 import GooeyNav from "@/components/GooeyNav";
 import { useSaved } from "@/context/SavedContext";
+import { ShortcutHint } from "@/components/common/CommandMenu";
 
 /* ---------- Buttons ---------- */
 type BtnVariant = "primary" | "ink" | "outline" | "ghost";
@@ -44,9 +45,24 @@ export function useTheme() {
   useEffect(() => setDark(document.documentElement.classList.contains("dark")), []);
   const toggle = () => {
     const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
+    const apply = () => {
+      setDark(next);
+      document.documentElement.classList.toggle("dark", next);
+      localStorage.setItem("theme", next ? "dark" : "light");
+    };
+
+    // Chrome View Transitions API (under 300ms, respects reduced motion)
+    if (
+      typeof document !== "undefined" &&
+      "startViewTransition" in document &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      (document as any).startViewTransition(() => {
+        apply();
+      });
+    } else {
+      apply();
+    }
   };
   return { dark, toggle };
 }
@@ -132,7 +148,16 @@ export function SiteHeader() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={toggle} aria-label={dark ? "Switch to light theme" : "Switch to dark theme"} className={btn("ghost", "sm")}>
+          <button
+            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, metaKey: true }))}
+            className={cn(btn("outline", "sm"), "hidden md:inline-flex items-center gap-1.5")}
+            aria-label="Open command menu"
+          >
+            <Search className="size-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Search</span>
+            <ShortcutHint keys="⌘K" className="ml-0.5" />
+          </button>
+          <button onClick={toggle} aria-label={dark ? "Switch to light theme (Shift+D)" : "Switch to dark theme (Shift+D)"} className={btn("ghost", "sm")}>
             {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </button>
           <Link to="/opportunities" className={cn(btn("primary", "sm"), "hidden sm:inline-flex")}>
@@ -249,7 +274,7 @@ export function SavedButton({ id, className }: { id: string; className?: string 
       }}
       aria-pressed={saved}
       aria-label={saved ? "Remove from saved" : "Save opportunity"}
-      className={cn("grid size-9 place-items-center rounded-md border border-border transition-colors hover:border-primary cursor-pointer", saved && "border-primary bg-accent text-primary", className)}
+      className={cn("hit-slop grid size-9 place-items-center rounded-md border border-border transition-colors hover:border-primary cursor-pointer", saved && "border-primary bg-accent text-primary", className)}
     >
       <Bookmark className={cn("size-4 transition-transform", saved && "fill-current scale-110")} />
     </button>
