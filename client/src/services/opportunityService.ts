@@ -120,6 +120,41 @@ export const opportunityService = {
     }
   },
 
+  async getDomainCounts(): Promise<Record<string, number>> {
+    const key = "domain-counts";
+    const cached = swrMemoryCache.get(key);
+    if (cached) {
+      apiClient
+        .get<any, { success: boolean; data: { _id: string; count: number }[] }>("/opportunities/domains")
+        .then((res) => {
+          const map: Record<string, number> = {};
+          if (Array.isArray(res.data)) {
+            res.data.forEach((item) => {
+              map[item._id] = item.count;
+            });
+          }
+          swrMemoryCache.set(key, { data: map, timestamp: Date.now() });
+        })
+        .catch(() => {});
+      return (cached.data as Record<string, number>) || {};
+    }
+    try {
+      const res = await apiClient.get<any, { success: boolean; data: { _id: string; count: number }[] }>(
+        "/opportunities/domains"
+      );
+      const map: Record<string, number> = {};
+      if (Array.isArray(res.data)) {
+        res.data.forEach((item) => {
+          map[item._id] = item.count;
+        });
+      }
+      swrMemoryCache.set(key, { data: map, timestamp: Date.now() });
+      return map;
+    } catch {
+      return {};
+    }
+  },
+
   async getById(id: string): Promise<Opportunity> {
     const key = `opp:${id}`;
     const cached = swrMemoryCache.get(key);

@@ -4,16 +4,26 @@ import { ArrowUpRight, Loader2 } from "lucide-react";
 import { opportunityService, DOMAINS, type Opportunity } from "@/services/opportunityService";
 
 export function DomainsPage() {
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await opportunityService.list({ limit: 100 });
-        setOpportunities(res.data);
+        const data = await opportunityService.getDomainCounts();
+        if (data && Object.keys(data).length > 0) {
+          setCounts(data);
+        } else {
+          // Fallback to listing if aggregate is empty
+          const res = await opportunityService.list({ limit: 50 });
+          const map: Record<string, number> = {};
+          res.data.forEach((o) => {
+            if (o.domain) map[o.domain] = (map[o.domain] || 0) + 1;
+          });
+          setCounts(map);
+        }
       } catch (err) {
-        console.error("Failed to load opportunities:", err);
+        console.error("Failed to load domain counts:", err);
       } finally {
         setLoading(false);
       }
@@ -36,7 +46,7 @@ export function DomainsPage() {
       ) : (
         <ul className="mt-10 border-t-2 border-frame">
           {DOMAINS.map((d, i) => {
-            const count = opportunities.filter((o) => o.domain === d).length;
+            const count = counts[d] || 0;
             return (
               <li key={d}>
                 <Link
@@ -45,7 +55,7 @@ export function DomainsPage() {
                 >
                   <span className="w-8 text-sm text-muted-foreground">0{i + 1}</span>
                   <span className="flex-1 font-display text-2xl font-bold sm:text-5xl">{d}</span>
-                  <span className="text-sm text-muted-foreground">{count} open</span>
+                  <span className="text-sm tabular-nums text-muted-foreground">{count} open</span>
                   <ArrowUpRight className="size-6 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
                 </Link>
               </li>

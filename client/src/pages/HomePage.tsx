@@ -11,6 +11,7 @@ import { opportunityService, DOMAINS, type Opportunity } from "@/services/opport
 export function HomePage() {
   const [q, setQ] = useState("");
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [domainCounts, setDomainCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const showSkeleton = useDelayedLoading(loading, 300);
   const navigate = useNavigate();
@@ -18,8 +19,12 @@ export function HomePage() {
   useEffect(() => {
     async function fetchHomeData() {
       try {
-        const res = await opportunityService.list({ limit: 12 });
+        const [res, dCounts] = await Promise.all([
+          opportunityService.list({ limit: 12 }),
+          opportunityService.getDomainCounts().catch(() => ({})),
+        ]);
         setOpportunities(res.data);
+        if (dCounts) setDomainCounts(dCounts);
       } catch (err) {
         console.error("Failed to load opportunities:", err);
       } finally {
@@ -41,7 +46,7 @@ export function HomePage() {
 
   const counts = DOMAINS.map((d) => ({
     d,
-    n: opportunities.filter((o) => o.domain === d).length,
+    n: domainCounts[d] ?? opportunities.filter((o) => o.domain === d).length,
   }));
 
   const go = () => {
