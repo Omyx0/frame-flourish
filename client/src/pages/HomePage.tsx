@@ -98,25 +98,18 @@ export function HomePage() {
           </div>
 
           {/* Framed preview collage */}
-          <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-            <div className="relative ml-auto w-[78%] overflow-hidden rounded-lg border-2 border-frame shadow-hard-lg bg-burgundy/20">
-              {/* Blur placeholder while hero loads */}
-              <div
-                className="absolute inset-0 bg-[#A4161A]/30 backdrop-blur-md transition-opacity duration-500 pointer-events-none"
-                aria-hidden="true"
-              />
+          <div className="relative mx-auto w-full max-w-md lg:max-w-none pb-6 sm:pb-8">
+            <div className="relative ml-auto w-[78%] overflow-hidden rounded-lg border-2 border-frame shadow-hard-lg">
               <img
                 src={hero}
                 alt="Graduate walking through an office on her first day"
                 width={896}
                 height={1152}
-                loading="eager"
-                decoding="async"
-                className="aspect-[4/5] w-full object-cover relative z-10 transition-opacity duration-300"
+                className="aspect-[4/5] w-full object-cover"
               />
             </div>
             {/* swinging tag */}
-            <div className="animate-swing absolute -top-2 left-[14%] hidden sm:block" aria-hidden>
+            <div className="animate-swing absolute -top-2 left-[12%] z-30 hidden sm:block" aria-hidden>
               <div className="mx-auto h-8 w-0.5 bg-frame" />
               <div className="rounded-md border-2 border-frame bg-highlight px-3 py-2 text-center font-display text-sm font-extrabold leading-tight text-primary-foreground shadow-hard-sm dark:text-burgundy-foreground">
                 NOW
@@ -127,11 +120,11 @@ export function HomePage() {
             {firstRole && (
               <Link
                 to={`/opportunities/${getOppId(firstRole)}`}
-                className="absolute -bottom-6 left-0 w-[70%] rounded-lg bg-card p-4 frame frame-lift sm:w-[60%]"
+                className="absolute -bottom-4 left-0 z-20 w-[78%] sm:w-[68%] rounded-lg border-2 border-frame bg-card/95 backdrop-blur-md p-4 shadow-hard frame-lift"
               >
                 <p className="text-xs font-semibold uppercase tracking-widest text-primary">Closing soon</p>
-                <p className="mt-1 font-display text-lg font-bold leading-tight truncate">{firstRole.title}</p>
-                <p className="mt-1 text-sm text-muted-foreground truncate">{firstRole.companyName} · {firstRole.pay || "Stipend"}</p>
+                <p className="mt-1 font-display text-base sm:text-lg font-bold leading-tight line-clamp-2">{firstRole.title}</p>
+                <p className="mt-1 text-xs sm:text-sm text-muted-foreground truncate">{firstRole.companyName} · {firstRole.pay || "Stipend"}</p>
               </Link>
             )}
           </div>

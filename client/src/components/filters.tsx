@@ -1,5 +1,4 @@
 import { Search, X } from "lucide-react";
-import { ShortcutHint } from "@/components/common/CommandMenu";
 import { cn } from "@/utils/utils";
 
 export function SearchBar({
@@ -31,17 +30,6 @@ export function SearchBar({
           placeholder="Role, company or keyword"
           className="w-full min-w-0 bg-transparent text-base outline-none placeholder:text-muted-foreground"
         />
-        {!value && (
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, metaKey: true }))}
-            className="cursor-pointer"
-            tabIndex={-1}
-            aria-label="Open command palette (Cmd+K / Ctrl+K)"
-          >
-            <ShortcutHint keys="⌘K" />
-          </button>
-        )}
         {value && (
           <button type="button" onClick={() => onChange("")} aria-label="Clear search" className="hit-slop flex size-8 items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer">
             <X className="size-4" />

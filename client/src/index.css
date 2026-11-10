@@ -137,16 +137,10 @@
   :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 }
 
-/* Continuous corners (Apple style squircles for Chromium) */
-.frame, .rounded-lg, .rounded-md, .rounded-sm, button, [class*="rounded-"] {
-  corner-shape: squircle;
-}
-
 /* Neo-brutal frame: used selectively */
 @utility frame {
   border: 2px solid var(--frame);
   box-shadow: var(--shadow-hard);
-  corner-shape: squircle;
 }
 @utility frame-lift {
   transition: transform 180ms var(--ease-out-soft), box-shadow 180ms var(--ease-out-soft);
